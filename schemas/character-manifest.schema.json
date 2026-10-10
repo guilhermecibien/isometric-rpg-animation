@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/isometric-rpg-animation/character-manifest.schema.json",
+  "title": "character-manifest",
+  "type": "object",
+  "required": ["schemaVersion", "id", "profile", "frame", "pivot", "atlas", "animations"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$" },
+    "name": { "type": "string" },
+    "profile": { "type": "string" },
+    "frame": { "type": "object", "required": ["width", "height"], "properties": { "width": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 } } },
+    "pivot": { "type": "object", "required": ["x", "y"], "properties": { "x": { "type": "number" }, "y": { "type": "number" } } },
+    "shadow": { "type": "object", "properties": { "rx": { "type": "number" }, "ry": { "type": "number" } } },
+    "atlas": { "type": "object", "required": ["image", "data"], "properties": { "image": { "type": "string" }, "data": { "type": "string" } } },
+    "animations": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["frames", "fps", "loop", "directions"],
+        "properties": {
+          "frames": { "type": "integer", "minimum": 1 },
+          "fps": { "type": "number", "exclusiveMinimum": 0 },
+          "loop": { "type": "boolean" },
+          "directions": { "type": "array", "minItems": 1, "items": { "enum": ["S", "SW", "W", "NW", "N", "NE", "E", "SE"] } },
+          "events": { "type": "array", "items": { "type": "object", "required": ["frame", "name"], "properties": { "frame": { "type": "integer", "minimum": 0 }, "name": { "type": "string" } } } },
+          "frameDurations": { "type": "array", "items": { "type": "number", "exclusiveMinimum": 0 } },
+          "cycleTravel": { "type": "object", "additionalProperties": { "type": "object", "required": ["x", "y"], "properties": { "x": { "type": "number" }, "y": { "type": "number" } } } },
+          "footMarkers": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "array", "items": { "type": "object", "required": ["id", "x", "y", "contact"], "properties": { "id": { "type": "string" }, "x": { "type": "number" }, "y": { "type": "number" }, "contact": { "type": "boolean" } } } } } }
+        }
+      }
+    },
+    "source": { "type": "object" },
+    "analysis": { "type": "object" }
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+out/
+reports/
+.env
+examples/phaser-demo/dist/
+examples/phaser-demo/public/characters/

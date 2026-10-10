@@ -1,0 +1,14 @@
+{
+  "id": "blocky",
+  "profile": "humanoid",
+  "sheet": "sheet.png",
+  "license": "MIT (synthetic)",
+  "grid": { "frameWidth": 48, "frameHeight": 48 },
+  "background": { "mode": "color", "color": [255, 0, 255], "tolerance": 0 },
+  "align": { "mode": "anchor", "padding": 4 },
+  "projection": { "tileWidth": 64, "tileHeight": 32, "zScale": 40 },
+  "animations": {
+    "idle": { "fps": 4, "loop": true, "frames": 6, "rows": { "S": 0, "E": 1 } },
+    "walk": { "fps": 10, "loop": true, "frames": 6, "rows": { "S": 0, "E": 1 }, "stride": 0.8, "events": [{ "frame": 0, "name": "footstep" }, { "frame": 3, "name": "footstep" }] }
+  }
+}

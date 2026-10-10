@@ -1,0 +1,51 @@
+{
+  "id": "bot",
+  "name": "Articulated demo bot",
+  "profile": "humanoid",
+  "canvas": [96, 96],
+  "pivot": [48, 80],
+  "license": "MIT",
+  "parts": {
+    "body":  { "image": "parts/body.png", "pivot": [12, 30] },
+    "head":  { "image": "parts/head.png", "pivot": [12, 22] },
+    "leg_l": { "image": "parts/leg.png",  "pivot": [5, 3] },
+    "leg_r": { "image": "parts/leg.png",  "pivot": [5, 3] },
+    "arm_l": { "image": "parts/arm.png",  "pivot": [4, 3] },
+    "arm_r": { "image": "parts/arm.png",  "pivot": [4, 3] }
+  },
+  "hierarchy": { "body": null, "head": "body", "leg_l": "body", "leg_r": "body", "arm_l": "body", "arm_r": "body" },
+  "attach": {
+    "body": [0, -28],
+    "head": [0, -30],
+    "leg_l": [-5, 0], "leg_r": [5, 0],
+    "arm_l": [-12, -26], "arm_r": [12, -26]
+  },
+  "feet": {
+    "L": { "part": "leg_l", "point": [5, 29] },
+    "R": { "part": "leg_r", "point": [5, 29] }
+  },
+  "views": {
+    "S": { "order": ["leg_l", "leg_r", "body", "arm_l", "arm_r", "head"] },
+    "E": { "order": ["arm_l", "leg_l", "leg_r", "body", "head", "arm_r"] },
+    "W": { "mirrorOf": "E" }
+  },
+  "animations": {
+    "idle": {
+      "fps": 4, "loop": true, "frames": 4, "ease": "smooth",
+      "keyframes": [
+        { "t": 0.0, "root": [0, 0], "rot": { "head": 0, "arm_l": 2, "arm_r": -2 } },
+        { "t": 0.5, "root": [0, 1], "rot": { "head": 2, "arm_l": 4, "arm_r": -4 } }
+      ]
+    },
+    "walk": {
+      "fps": 10, "loop": true, "frames": 8, "stride": 0.9, "ease": "smooth",
+      "contacts": { "L": [[0.0, 0.5]], "R": [[0.5, 1.0]] },
+      "keyframes": [
+        { "t": 0.00, "root": [0, 0], "rot": { "leg_l": 28, "leg_r": -28, "arm_l": -25, "arm_r": 25 } },
+        { "t": 0.25, "root": [0, 2], "rot": { "leg_l": 0, "leg_r": 0, "arm_l": 0, "arm_r": 0 } },
+        { "t": 0.50, "root": [0, 0], "rot": { "leg_l": -28, "leg_r": 28, "arm_l": 25, "arm_r": -25 } },
+        { "t": 0.75, "root": [0, 2], "rot": { "leg_l": 0, "leg_r": 0, "arm_l": 0, "arm_r": 0 } }
+      ]
+    }
+  }
+}

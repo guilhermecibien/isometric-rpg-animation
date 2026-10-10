@@ -1,0 +1,6 @@
+interface:
+  display_name: "Isometric RPG Animation"
+  short_description: "Create, validate and integrate natural isometric animations into Phaser.js RPGs"
+  default_prompt: "Use $isometric-rpg-animation to analyze my game's character movement, find animation problems (foot sliding, wrong directions, depth sorting) and fix them while preserving the art style."
+policy:
+  allow_implicit_invocation: true
