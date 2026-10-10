@@ -46,6 +46,13 @@ describe('IsometricAnimationController', () => {
     c.setMotion({ screenSpeed: 120, direction: 'E' });
     expect(tick(c, 16).rate).toBeCloseTo(1.5, 3);
   });
+  it('reports the new state\'s rate on the tick a one-shot hands over to walk', () => {
+    const c = mk();
+    c.setMotion({ screenSpeed: 120, direction: 'E' });
+    let firstWalk: FrameOutput | undefined;
+    for (let t = 0; t < 600 && !firstWalk; t += 16) { const o = c.update(16); if (o.state === 'WALK') firstWalk = o; }
+    expect(firstWalk!.rate).toBeCloseTo(1.5, 3);
+  });
   it('flags clamped sync when moving too fast for the walk cycle', () => {
     const c = mk();
     c.setMotion({ screenSpeed: 300, direction: 'E' }); tick(c, 600);

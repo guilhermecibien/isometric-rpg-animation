@@ -6,6 +6,10 @@ type State = {
 };
 const demo = (page: Page) => page.evaluate(() => window.__demo!.getState()) as Promise<State>;
 
+/** Software-rendered CI runs at low FPS, so wait for conditions instead of fixed durations. */
+const until = (page: Page, fn: (s: State) => boolean, timeout = 15_000) =>
+  page.waitForFunction((src) => (new Function('s', `return (${src})(s)`))(window.__demo!.getState()), fn.toString(), { timeout });
+
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -32,7 +36,7 @@ test('WASD moves in SCREEN space: D walks screen-right (east), not along world +
   await page.locator('canvas').click({ position: { x: 5, y: 5 } }).catch(() => undefined);
   const before = await demo(page);
   await page.keyboard.down('d');
-  await page.waitForTimeout(900);
+  await until(page, (s) => (s.world.x as number) > 2.5 + 0.4 && s.direction === 'E');
   const mid = await demo(page);
   expect(mid.state === 'WALK' || mid.state === 'START_WALK').toBeTruthy();
   expect(mid.direction).toBe('E');
@@ -40,7 +44,7 @@ test('WASD moves in SCREEN space: D walks screen-right (east), not along world +
   expect(mid.world.x).toBeGreaterThan(before.world.x + 0.3);
   expect(mid.world.y).toBeLessThan(before.world.y - 0.3);
   await page.keyboard.up('d');
-  await page.waitForTimeout(900);
+  await until(page, (s) => s.state === 'IDLE');
   const end = await demo(page);
   expect(end.state).toBe('IDLE');
   expect(end.direction).toBe('E');
@@ -50,7 +54,7 @@ test('WASD moves in SCREEN space: D walks screen-right (east), not along world +
 test('diagonal keys give diagonal directions and the walk cycle is foot-synced', async ({ page }) => {
   await page.keyboard.down('s');
   await page.keyboard.down('d');
-  await page.waitForTimeout(1000);
+  await until(page, (s) => s.state === 'WALK' && s.direction === 'SE');
   const s = await demo(page);
   expect(s.direction).toBe('SE');
   expect(s.anim).toBe('walk');
@@ -64,7 +68,7 @@ test('diagonal keys give diagonal directions and the walk cycle is foot-synced',
 test('shift runs with the run animation', async ({ page }) => {
   await page.keyboard.down('Shift');
   await page.keyboard.down('d');
-  await page.waitForTimeout(1200);
+  await until(page, (s) => s.state === 'RUN');
   const s = await demo(page);
   expect(s.state).toBe('RUN');
   expect(s.anim).toBe('run');
@@ -130,18 +134,16 @@ test('attack locks direction and movement, fires the hit event window, then reco
   expect(during.state).toBe('ATTACK');
   expect(during.direction).toBe(a.direction);
   await page.keyboard.up('d');
-  await page.waitForTimeout(900);
+  await until(page, (s) => s.state === 'IDLE', 20_000);
   expect((await demo(page)).state).toBe('IDLE');
 });
 
 test('hit interrupts, death is final until respawn', async ({ page }) => {
   await page.keyboard.press('h');
-  await page.waitForTimeout(60);
-  expect((await demo(page)).state).toBe('HIT');
-  await page.waitForTimeout(500);
+  await until(page, (s) => s.state === 'HIT');
+  await until(page, (s) => s.state === 'IDLE');
   await page.keyboard.press('k');
-  await page.waitForTimeout(1200);
-  expect((await demo(page)).state).toBe('DEATH');
+  await until(page, (s) => s.state === 'DEATH');
   await page.keyboard.down('d');
   await page.waitForTimeout(300);
   expect((await demo(page)).state).toBe('DEATH');
@@ -157,14 +159,14 @@ test('naive mode (legacy) disables the foot sync; synced mode restores it', asyn
   expect((await demo(page)).syncMode).toBe('naive');
   await page.keyboard.down('Shift');
   await page.keyboard.down('d');
-  await page.waitForTimeout(800);
+  await until(page, (s) => s.state === 'RUN');
   const naive = await demo(page);
   expect(naive.rate).toBe(1);
   await page.keyboard.up('d'); await page.keyboard.up('Shift');
   await page.click('#sync-synced');
-  await page.waitForTimeout(600);
+  await until(page, (s) => s.state === 'IDLE');
   await page.keyboard.down('d');
-  await page.waitForTimeout(800);
+  await until(page, (s) => s.state === 'WALK' && s.syncMode === 'synced' && s.speed >= 1.39);
   const synced = await demo(page);
   expect(synced.syncMode).toBe('synced');
   expect(synced.rate).not.toBe(1);

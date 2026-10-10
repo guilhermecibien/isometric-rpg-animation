@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { access, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import type { AnimationProvider, FrameRequest, FrameResult, ProviderConfig } from './index.js';
 
 /**
@@ -20,6 +20,11 @@ export class CommandProvider implements AnimationProvider {
   }
 
   async isAvailable(): Promise<{ ok: boolean; reason?: string }> {
+    const exe = this.command[0] as string;
+    // `which`/`where` only resolve bare names (`where` rejects full paths on Windows)
+    if (isAbsolute(exe) || /[\\/]/.test(exe)) {
+      return access(exe).then(() => ({ ok: true }), () => ({ ok: false, reason: `${exe} does not exist` }));
+    }
     return new Promise((resolve) => {
       const probe = process.platform === 'win32' ? 'where' : 'which';
       const c = spawn(probe, [this.command[0] as string], { stdio: 'ignore' });

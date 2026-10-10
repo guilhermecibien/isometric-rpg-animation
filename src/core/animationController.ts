@@ -148,8 +148,11 @@ export class IsometricAnimationController {
     const dt = dtMs / 1000;
     this.sm.update(dtMs);
     if (!this.isActionState()) this.updateLocomotion();
-    const rate = this.computeRate();
+    let rate = this.computeRate();
+    const before = this.sm.state;
     this.advance(dt * rate);
+    // A one-shot may have just ended (e.g. START_WALK → WALK): report the rate of the state we are in now.
+    if (this.sm.state !== before) rate = this.computeRate();
     return this.output(rate);
   }
 
