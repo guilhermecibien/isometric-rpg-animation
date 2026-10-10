@@ -12,3 +12,4 @@ reports/
 .env
 examples/phaser-demo/dist/
 examples/phaser-demo/public/characters/
+.github-token
