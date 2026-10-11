@@ -124,7 +124,7 @@ def load_character(manifest_path: str | Path) -> tuple[dict, dict, Image.Image, 
 
 
 def validate_character(manifest_path: str | Path, max_foot_slide: float = 1.0, jump_factor: float = 4.0,
-                       game_speeds: dict | None = None) -> Report:
+                       game_speeds: dict | None = None, require_orientation: bool = False) -> Report:
     rep = Report()
     manifest_path = Path(manifest_path)
     m = read_json(manifest_path)
@@ -210,6 +210,19 @@ def validate_character(manifest_path: str | Path, max_foot_slide: float = 1.0, j
                 c.fail("warning", f"idle/{d}: pivot {pivot} is outside the sprite bbox {bb}", f"idle/{d}")
 
     prof_req = PROFILE_REQUIRED.get(m["profile"])
+    with rep.check("orientation.review", "the art in every direction cell was reviewed as really facing that direction (isoanim orientation)") as c:
+        from .orientation import REVIEW_FILE, check_review
+        rv_path = base / REVIEW_FILE
+        dirs8 = sorted({d for a in m["animations"].values() for d in a["directions"]})
+        state, bad = check_review(read_json(rv_path) if rv_path.exists() else None, dirs8)
+        if state == "mismatch":
+            for b in bad:
+                c.fail("error", f"wrong orientation: {b}", REVIEW_FILE)
+        elif state in ("missing", "pending") and len(dirs8) > 1:
+            c.fail("error" if require_orientation else "info",
+                   "orientation not reviewed: run `isoanim orientation`, look at the compass sheet and record what each direction faces"
+                   if state == "missing" else f"{REVIEW_FILE} is incomplete (reviewed=false or a direction is still null)", REVIEW_FILE)
+
     with rep.check("profile.required", f"animations required by profile '{m['profile']}' are present") as c:
         if prof_req is None:
             c.fail("warning", f"unknown profile {m['profile']!r}; completeness not checked")

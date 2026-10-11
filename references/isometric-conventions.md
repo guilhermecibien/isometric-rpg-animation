@@ -23,6 +23,9 @@ Consequences: +x on the grid is **SE**, not E. WASD is mapped in screen space (`
 
 Sheets authored with another convention: pass `spriteConvention` (e.g. `{ S: 'N', N: 'S' }`) to `DirectionResolver`, or remap rows in the `process` spec (`rows`). 4-direction sheets: provide `S W N E`; diagonals resolve through mirror/nearest fallback, or reduce explicitly with `DirectionResolver.reduceTo4`.
 
+## What each direction must show
+The name of a direction is where the character walks on screen, and the art must face that way: front views toward the bottom of the screen (`S`, `SW`, `SE`), back views toward the top (`N`, `NW`, `NE`), side profiles for `W`/`E`. The full table with prompt wording is in `references/front-reference-generation.md`; `isoanim orientation` draws it as a compass contact sheet and `validate` enforces the recorded review (`orientation-review.json`). A game may order the rows differently from the manifest; always review the final sheet in the game's own order.
+
 ## Mirroring
 If only E-side directions exist, the registry resolves W/SW/NW by mirroring (`flipX`), around the pivot column. Keep the pivot on the vertical axis of symmetry of the sprite or mirrored frames will jump.
 

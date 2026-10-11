@@ -7,7 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from .common import EXIT_ENV, EXIT_OK, EXIT_USAGE, EXIT_VALIDATION, IsoAnimError, write_json
+from .common import DIRECTIONS_8, EXIT_ENV, EXIT_OK, EXIT_USAGE, EXIT_VALIDATION, IsoAnimError, write_json
 
 
 def _size(s: str) -> tuple[int, int]:
@@ -160,7 +160,7 @@ def cmd_validate(a) -> int:
     from .report import write_reports
     from .validate import validate_character
     speeds = dict(kv.split("=") for kv in (a.game_speed or []))
-    rep = validate_character(a.manifest, a.max_foot_slide, game_speeds={k: float(v) for k, v in speeds.items()})
+    rep = validate_character(a.manifest, a.max_foot_slide, game_speeds={k: float(v) for k, v in speeds.items()}, require_orientation=a.require_orientation)
     previews = [str(p) for p in sorted(Path(a.report_dir).glob("*.gif"))] if a.report_dir else None
     if a.report_dir:
         j, md = write_reports(rep, a.report_dir, [Path(p).name for p in previews or []])
@@ -174,6 +174,36 @@ def cmd_validate(a) -> int:
     print("note: automated checks cannot judge whether the motion looks natural; review the previews.")
     if not rep.ok or (a.strict and rep.warnings):
         return EXIT_VALIDATION
+    return EXIT_OK
+
+
+def cmd_orientation(a) -> int:
+    from . import orientation as o
+    if a.check:
+        from .common import read_json
+        rv = read_json(a.check)
+        dirs = list((rv.get("observed") or {}).keys())
+        state, bad = o.check_review(rv, dirs)
+        for b in bad:
+            print(f"ERROR   wrong orientation: {b}")
+        print({"ok": "PASS: every direction faces where it should", "pending": "PENDING: review incomplete",
+               "mismatch": "FAIL: art faces the wrong way", "missing": "FAIL: no review"}[state])
+        return EXIT_OK if state == "ok" else EXIT_VALIDATION
+    if a.sheet:
+        if not (a.rows and a.frame_size):
+            raise IsoAnimError("--sheet needs --rows (e.g. n,ne,e,se,s,sw,w,nw) and --frame-size WxH")
+        frames = o.frames_from_sheet(a.sheet, [r for r in a.rows.split(",") if r], a.frame_size, a.col)
+    elif a.manifest:
+        frames = o.frames_from_manifest(a.manifest, a.anim, a.col)
+    else:
+        raise IsoAnimError("give --manifest or --sheet")
+    out = Path(a.out_dir)
+    sheet = o.orientation_sheet(frames, out / "orientation-sheet.png", a.scale)
+    tpl = out / o.REVIEW_FILE
+    if not tpl.exists():
+        o.write_review_template(tpl, [d for d in DIRECTIONS_8 if d in frames])
+    print(f"compass sheet: {sheet}\nreview file:   {tpl}\nLook at the sheet, fill `observed` per direction, then run: isoanim orientation --check {tpl}")
+    print("When it passes, copy the review file next to the manifest so `validate` enforces it.")
     return EXIT_OK
 
 
@@ -267,8 +297,19 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("validate", help="validate a character directory")
     s.add_argument("--manifest", required=True); s.add_argument("--report-dir"); s.add_argument("--strict", action="store_true")
     s.add_argument("--max-foot-slide", type=float, default=1.0)
+    s.add_argument("--require-orientation", action="store_true", help="fail when orientation-review.json is missing or incomplete")
     s.add_argument("--game-speed", nargs="*", metavar="ANIM=UNITS_PER_SEC", help="world units (cells) per second, e.g. walk=1.4 run=3.3")
     s.set_defaults(fn=cmd_validate)
+
+    s = sub.add_parser("orientation", help="compass contact sheet + review file: does each direction's art face that direction?")
+    s.add_argument("--manifest"); s.add_argument("--anim", default="walk")
+    s.add_argument("--sheet", help="flat game sheet (one row per direction) instead of a manifest")
+    s.add_argument("--rows", help="direction of each sheet row in order, e.g. n,ne,e,se,s,sw,w,nw")
+    s.add_argument("--frame-size", type=_size, help="WxH of one cell in --sheet")
+    s.add_argument("--col", type=int, default=0, help="frame column to show (default 0)")
+    s.add_argument("--out-dir", default="orientation"); s.add_argument("--scale", type=float, default=1.0)
+    s.add_argument("--check", metavar="REVIEW_JSON", help="only check a filled review file")
+    s.set_defaults(fn=cmd_orientation)
 
     s = sub.add_parser("preview", help="GIFs and contact sheets")
     s.add_argument("--manifest", required=True); s.add_argument("--out-dir", required=True)
